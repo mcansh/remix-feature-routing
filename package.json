@@ -29,8 +29,16 @@
   },
   "author": "Logan McAnsh <logan@mcan.sh> (https://mcan.sh/)",
   "license": "MIT",
+  "dependencies": {
+    "minimatch": "^9.0.0"
+  },
   "devDependencies": {
+    "@remix-run/dev": "^1.15.0",
+    "@types/node": "^18.16.1",
     "tsup": "^6.7.0",
     "typescript": "5.1.0-beta"
+  },
+  "peerDependencies": {
+    "@remix-run/dev": "^1.15.0"
   }
 }
