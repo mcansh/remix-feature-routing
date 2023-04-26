@@ -125,9 +125,9 @@ export function createRoutesFromFolders(
   for (let file of routes) {
     let normalizedFile = normalizeSlashes(file);
     let routeExt = path.extname(normalizedFile);
-    let routeDir = path.dirname(normalizedFile);
     let normalizedApp = normalizeSlashes(appDirectory);
     let routeId = normalizedFile.slice(0, -routeExt.length);
+    if (routeId.endsWith(".route")) routeId.slice(0, -".route".length);
 
     let conflict = routeIds.get(routeId);
     if (conflict) {
@@ -148,7 +148,7 @@ export function createRoutesFromFolders(
   );
 
   for (let [routeId, file] of sortedRouteIds) {
-    let isIndex = routeId.endsWith("_index.route");
+    let isIndex = routeId.endsWith("_index");
     let routeIdNoFeature = routeId.slice(0);
     let noRouteEnding = routeIdNoFeature.replace(".route", "");
     let [segments, raw] = getRouteSegments(noRouteEnding);
