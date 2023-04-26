@@ -14,12 +14,15 @@ import {
 import { findConfig } from "@remix-run/dev/dist/config";
 import { routeModuleExts } from "@remix-run/dev/dist/config/routesConvention";
 import { PrefixLookupTrie } from "./trie";
+import { createRoutePath, getRouteSegments } from "./utils";
 import {
-  createRoutePath,
   findRouteModuleForFile,
   findRouteModuleForFolder,
-  getRouteSegments,
-} from "./utils";
+} from "./routes-anywhere";
+import {
+  findRouteModuleForFile as findRouteModuleForFileInRoutes,
+  findRouteModuleForFolder as findRouteModuleForFolderInRoutes,
+} from "./routes-dir";
 
 export type CreateRoutesFromFeatureFoldersOptions = {
   /**
@@ -39,8 +42,15 @@ function getRoutes(appDirectory: string, ignoredFilePatterns: string[] = []) {
     .map((pattern) => minimatch.makeRe(pattern))
     .filter((r: any): r is MMRegExp => !!r);
 
-  // Only read the routes directory
-  let entries = fs.readdirSync(appDirectory, {
+  // get routes from anywhere in appDirectory
+  let entries = fs
+    .readdirSync(appDirectory, {
+      withFileTypes: true,
+      encoding: "utf-8",
+    })
+    .filter((r) => r.isDirectory() && r.name !== "routes");
+
+  let routeEntries = fs.readdirSync(path.join(appDirectory, "routes"), {
     withFileTypes: true,
     encoding: "utf-8",
   });
@@ -57,6 +67,26 @@ function getRoutes(appDirectory: string, ignoredFilePatterns: string[] = []) {
       );
     } else if (entry.isFile()) {
       route = findRouteModuleForFile(
+        appDirectory,
+        entry.name,
+        ignoredFileRegex
+      );
+    }
+
+    if (route) routes.push(route);
+  }
+
+  for (let entry of routeEntries) {
+    let route: string | null = null;
+    // If it's a directory, don't recurse into it, instead just look for a route module
+    if (entry.isDirectory()) {
+      route = findRouteModuleForFolderInRoutes(
+        appDirectory,
+        entry.name,
+        ignoredFileRegex
+      );
+    } else if (entry.isFile()) {
+      route = findRouteModuleForFileInRoutes(
         appDirectory,
         entry.name,
         ignoredFileRegex
@@ -95,6 +125,7 @@ export function createRoutesFromFolders(
   for (let file of routes) {
     let normalizedFile = normalizeSlashes(file);
     let routeExt = path.extname(normalizedFile);
+    let routeDir = path.dirname(normalizedFile);
     let normalizedApp = normalizeSlashes(appDirectory);
     let routeId = normalizedFile.slice(0, -routeExt.length);
 
